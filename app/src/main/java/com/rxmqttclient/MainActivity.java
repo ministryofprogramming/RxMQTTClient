@@ -9,6 +9,7 @@ import com.rxmqtt.enums.ClientType;
 import com.rxmqtt.exceptions.RxMqttException;
 import com.rxmqtt.implementation.RxMqttAsyncClient;
 import com.rxmqtt.implementation.RxMqttClientFactory;
+import com.rxmqtt.implementation.RxMqttClientStatus;
 import com.rxmqtt.implementation.RxMqttMessage;
 import com.rxmqtt.interfaces.IRxMqttClient;
 import java.util.Enumeration;
@@ -29,13 +30,8 @@ import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
-
   @Override protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
-  }
-
-  @Override protected void onStart() {
-    super.onStart();
   }
 }

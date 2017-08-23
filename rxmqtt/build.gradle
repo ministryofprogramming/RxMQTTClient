@@ -1,5 +1,7 @@
 apply plugin: 'com.android.library'
 
+group='com.github.nihad92'
+
 android {
   compileSdkVersion 25
   buildToolsVersion "25.0.0"
@@ -22,16 +24,22 @@ android {
   buildTypes.each {
     it.buildConfigField 'String', 'TCP', '"tcp"'
     it.buildConfigField 'String', 'SSL', '"ssl"'
-
   }
+}
+
+ext {
+  pahoVersion = '1.1.1'
+  rxJavaVersion = '1.1.3'
+  bouncycastleVersion = '1.50'
+  junitVersion = '4.12'
 }
 
 dependencies {
   compile fileTree(dir: 'libs', include: ['*.jar'])
-  compile "org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.1.1"
+  compile "org.eclipse.paho:org.eclipse.paho.client.mqttv3:$pahoVersion"
 
-  compile "io.reactivex:rxjava:1.1.3"
-  compile "org.bouncycastle:bcprov-jdk15on:1.50"
-  compile "org.bouncycastle:bcpkix-jdk15on:1.50"
-  testCompile 'junit:junit:4.12'
+  compile "io.reactivex:rxjava:$rxJavaVersion"
+  compile "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+  compile "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+  testCompile "junit:junit:$junitVersion"
 }

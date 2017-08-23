@@ -3,18 +3,19 @@ package com.rxmqtt.implementation;
 import com.rxmqtt.enums.RxMqttClientState;
 import java.security.Timestamp;
 
-public class RxMqttClientStatus implements Cloneable {private Timestamp logTime;
+public class RxMqttClientStatus implements Cloneable {
+  private long logTime;
   private RxMqttClientState state;
 
   public RxMqttClientStatus() {
     this.state = RxMqttClientState.Init;
   }
 
-  public Timestamp getLogTime() {
+  public long getLogTime() {
     return logTime;
   }
 
-  public void setLogTime(Timestamp logTime) {
+  public void setLogTime(long logTime) {
     this.logTime = logTime;
   }
 

@@ -1,12 +1,10 @@
 package com.rxmqtt.implementation;
 
-import android.provider.SyncStateContract;
-import com.rxmqtt.Constants;
+import com.rxmqtt.BuildConfig;
 import com.rxmqtt.enums.ClientType;
 import com.rxmqtt.exceptions.RxMqttException;
 import com.rxmqtt.interfaces.IRxMqttClient;
 import com.rxmqtt.interfaces.IRxMqttClientFactory;
-import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
 
 public class RxMqttClientFactory implements IRxMqttClientFactory {
   @Override
@@ -21,13 +19,13 @@ public class RxMqttClientFactory implements IRxMqttClientFactory {
         break;
       }
       case Wait: {
-        break;
+        throw new UnsupportedOperationException();
       }
     }
     return client;
   }
 
   private String getBrokerUrl(String host, int port, Boolean useSSL) {
-    return String.format("%s://%s:%d", useSSL ? Constants.SSL : Constants.TCP, host, port);
+    return String.format("%s://%s:%d", useSSL ? BuildConfig.SSL : BuildConfig.TCP, host, port);
   }
 }

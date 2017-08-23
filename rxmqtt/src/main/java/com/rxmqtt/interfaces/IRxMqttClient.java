@@ -7,21 +7,17 @@ import org.eclipse.paho.client.mqttv3.IMqttToken;
 import rx.Observable;
 
 public interface IRxMqttClient {
-  public Observable<IMqttToken> connect();
+  Observable<IMqttToken> connect();
 
-  public Observable<IMqttToken> disconnect();
+  Observable<IMqttToken> disconnect();
 
-  public void disconnectForcibly();
+  void disconnectForcibly();
 
-  public Observable<IMqttToken> subscribeTopic(String topic, int qos);
+  Observable<RxMqttMessage> subscribeTopic(String topic, int qos);
 
-  public Observable<RxMqttMessage> subscribing(String regularExpression);
+  Observable<IMqttToken> publish(String topic, byte[] msg);
 
-  public Observable<RxMqttMessage> subscribing(Pattern pattern);
+  Observable<RxMqttClientStatus> statusReport();
 
-  public Observable<IMqttToken> publish(String topic, byte[] msg);
-
-  public Observable<RxMqttClientStatus> statusReport();
-
-  public Observable<IMqttToken> checkPing(Object userContext);
+  Observable<IMqttToken> checkPing(Object userContext);
 }

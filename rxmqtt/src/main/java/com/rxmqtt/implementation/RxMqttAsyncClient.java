@@ -12,7 +12,6 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
-import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -20,20 +19,26 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscriber;
+import rx.functions.Func1;
 import rx.subjects.PublishSubject;
 
 public class RxMqttAsyncClient implements IRxMqttClient {
-  private MqttConnectOptions conOpt = new MqttConnectOptions();
+  private MqttConnectOptions conOpt;
   private MqttAsyncClient client;
   private Hashtable<String, Pattern> patternHashtable;
   private Hashtable<String, PublishSubject<RxMqttMessage>> subjectHashtable;
+  private PublishSubject<RxMqttClientStatus> clientStatusSubject;
+  private RxMqttClientStatus rxMqttClientStatus;
 
 
   public RxMqttAsyncClient(String brokerUrl, String clientId)
       throws RxMqttException {
     super();
     try {
+      conOpt = new MqttConnectOptions();
       client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
+      clientStatusSubject = PublishSubject.create();
+      rxMqttClientStatus = new RxMqttClientStatus();
     } catch (MqttException ex) {
       throw new RxMqttException(RxMqttExceptionType.CLIENT_INIT_ERROR);
     }
@@ -41,22 +46,23 @@ public class RxMqttAsyncClient implements IRxMqttClient {
 
   private void connect(final Subscriber<? super IMqttToken> subscriber) {
     try {
+      updateState(RxMqttClientState.Connecting);
       client.connect(this.getConOpt(), "Context", new IMqttActionListener() {
         @Override
         public void onSuccess(IMqttToken asyncActionToken) {
-          //updateState(RxMqttClientState.Connected);
+          updateState(RxMqttClientState.Connected);
           subscriber.onNext(asyncActionToken);
           subscriber.onCompleted();
         }
 
         @Override
         public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-          //updateState(RxMqttClientState.ConnectingFailed);
+          updateState(RxMqttClientState.ConnectingFailed);
           subscriber.onError(new RxMqttTokenException(exception, asyncActionToken));
         }
       });
     } catch (MqttException ex) {
-      //updateState(RxMqttClientState.ConnectingFailed);
+      updateState(RxMqttClientState.ConnectingFailed);
       subscriber.onError(ex);
     }
   }
@@ -67,7 +73,7 @@ public class RxMqttAsyncClient implements IRxMqttClient {
       @Override
       public void call(final Subscriber<? super IMqttToken> subscriber) {
         if (null == client) {
-          //updateState(RxMqttClientState.ConnectingFailed);
+          updateState(RxMqttClientState.ConnectingFailed);
           subscriber.onError(new
               RxMqttException(RxMqttExceptionType.CLIENT_NULL_ERROR));
         }
@@ -99,23 +105,23 @@ public class RxMqttAsyncClient implements IRxMqttClient {
       public void call(final Subscriber<? super IMqttToken> subscriber) {
         if (client != null && client.isConnected()) {
           try {
-            //updateState(RxMqttClientState.TryDisconnect);
+            updateState(RxMqttClientState.TryDisconnect);
             client.disconnect("Context", new IMqttActionListener() {
               @Override
               public void onSuccess(IMqttToken asyncActionToken) {
-                //updateState(RxMqttClientState.Disconnected);
+                updateState(RxMqttClientState.Disconnected);
                 subscriber.onNext(asyncActionToken);
                 subscriber.onCompleted();
               }
 
               @Override
               public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                //updateState(RxMqttClientState.Disconnected);
+                updateState(RxMqttClientState.Disconnected);
                 subscriber.onError(new RxMqttTokenException(exception, asyncActionToken));
               }
             });
           } catch (MqttException e) {
-            //updateState(RxMqttClientState.Disconnected);
+            updateState(RxMqttClientState.Disconnected);
             subscriber.onError(e);
           }
         } else {
@@ -158,11 +164,11 @@ public class RxMqttAsyncClient implements IRxMqttClient {
   }
 
   @Override public Observable<RxMqttClientStatus> statusReport() {
-    return null;
+    return clientStatusSubject;
   }
 
   @Override
-  public Observable<IMqttToken> subscribeTopic(final String topic, final int qos) {
+  public Observable<RxMqttMessage> subscribeTopic(final String topic, final int qos) {
     return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
       @Override
       public void call(final Subscriber<? super IMqttToken> subscriber) {
@@ -186,15 +192,17 @@ public class RxMqttAsyncClient implements IRxMqttClient {
           subscriber.onError(ex);
         }
       }
+    }).flatMap(new Func1<IMqttToken, Observable<RxMqttMessage>>() {
+      @Override public Observable<RxMqttMessage> call(IMqttToken iMqttToken) {
+        return subscribing(topic);
+      }
     });
   }
 
-  @Override
   public Observable<RxMqttMessage> subscribing(String regularExpression) {
     return subscribing(Pattern.compile(regularExpression));
   }
 
-  @Override
   public synchronized Observable<RxMqttMessage> subscribing(final Pattern pattern) {
     if (null == patternHashtable && null == subjectHashtable) {
       patternHashtable = new Hashtable<>();
@@ -203,7 +211,7 @@ public class RxMqttAsyncClient implements IRxMqttClient {
       client.setCallback(new MqttCallback() {
         @Override
         public void connectionLost(Throwable cause) {
-          //updateState(RxMqttClientState.ConnectionLost);
+          updateState(RxMqttClientState.ConnectionLost);
         }
 
         @Override
@@ -267,5 +275,11 @@ public class RxMqttAsyncClient implements IRxMqttClient {
 
   public void setConOpt(MqttConnectOptions conOpt) {
     this.conOpt = conOpt;
+  }
+
+  private void updateState(RxMqttClientState clientState) {
+    rxMqttClientStatus.setLogTime(System.currentTimeMillis());
+    rxMqttClientStatus.setState(clientState);
+    clientStatusSubject.onNext(rxMqttClientStatus);
   }
 }

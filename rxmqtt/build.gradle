@@ -18,6 +18,12 @@ android {
       proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
     }
   }
+
+  buildTypes.each {
+    it.buildConfigField 'String', 'TCP', '"tcp"'
+    it.buildConfigField 'String', 'SSL', '"ssl"'
+
+  }
 }
 
 dependencies {

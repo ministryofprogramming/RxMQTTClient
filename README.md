@@ -1,6 +1,6 @@
 # RxMQTTClient
 
-[![](https://jitpack.io/v/nihad92/RxMQTTClient.svg)](https://jitpack.io/#nihad92/RxMQTTClient)
+[![](https://jitpack.io/v/ministryofprogramming/RxMQTTClient.svg)](https://jitpack.io/#ministryofprogramming/RxMQTTClient)
 
 RxMQTTClient is small library which simplify usage of [Paho](http://www.eclipse.org/paho/) MQTT trough RxJava.
 Inspired by [rxMqtt](https://github.com/xudshen/rxMqtt) library

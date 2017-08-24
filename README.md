@@ -27,7 +27,7 @@ allprojects {
 Download via Gradle:
 ```gradle
 dependencies {
-compile 'com.github.nihad92:RxMQTTClient:1.0.1'
+  compile 'com.github.ministryofprogramming:RxMQTTClient:1.0.2'
 }
 ```
 

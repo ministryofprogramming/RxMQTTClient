@@ -1,12 +1,11 @@
-package com.rxmqtt.interfaces;
+package com.rxmqtt;
 
-import com.rxmqtt.implementation.RxMqttClientStatus;
-import com.rxmqtt.implementation.RxMqttMessage;
-import java.util.regex.Pattern;
+import com.rxmqtt.models.RxMqttClientStatus;
+import com.rxmqtt.models.RxMqttMessage;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 import rx.Observable;
 
-public interface IRxMqttClient {
+public interface RxMqttClient {
   Observable<IMqttToken> connect();
 
   Observable<IMqttToken> disconnect();
@@ -14,6 +13,8 @@ public interface IRxMqttClient {
   void disconnectForcibly();
 
   Observable<RxMqttMessage> subscribeTopic(String topic, int qos);
+
+  Observable<RxMqttMessage> subscribeTopic(String[] topics, int[] qos);
 
   Observable<IMqttToken> publish(String topic, byte[] msg);
 

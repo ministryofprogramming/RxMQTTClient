@@ -1,14 +1,13 @@
-package com.rxmqtt.implementation;
+package com.rxmqtt.models;
 
-import com.rxmqtt.enums.RxMqttClientState;
-import java.security.Timestamp;
+import com.rxmqtt.models.enums.RxMqttClientState;
 
-public class RxMqttClientStatus implements Cloneable {
+public class RxMqttClientStatus {
   private long logTime;
   private RxMqttClientState state;
 
   public RxMqttClientStatus() {
-    this.state = RxMqttClientState.Init;
+    this.state = RxMqttClientState.INIT;
   }
 
   public long getLogTime() {
@@ -31,14 +30,4 @@ public class RxMqttClientStatus implements Cloneable {
   public String toString() {
     return String.format("time:%sm state:%s", getLogTime(), getState());
   }
-
-  @Override
-  protected Object clone() {
-    try {
-      return super.clone();
-    } catch (CloneNotSupportedException e) {
-      return null;
-    }
-  }
-
 }

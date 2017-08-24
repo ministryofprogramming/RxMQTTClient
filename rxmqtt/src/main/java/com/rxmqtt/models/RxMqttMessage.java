@@ -1,13 +1,12 @@
-package com.rxmqtt.implementation;
+package com.rxmqtt.models;
 
-import com.rxmqtt.interfaces.IRxMqttMessage;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import org.bouncycastle.util.Arrays;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-public class RxMqttMessage implements IRxMqttMessage {
+public class RxMqttMessage {
   private String topic;
   private MqttMessage rxMessage;
   private String decrypted_payload = null;
@@ -17,12 +16,10 @@ public class RxMqttMessage implements IRxMqttMessage {
     this.rxMessage = rxMessage;
   }
 
-  @Override
   public String getTopic() {
     return topic;
   }
 
-  @Override
   public String getMessage() {
     return null == rxMessage ? null : (decrypted_payload != null ? decrypted_payload : new String(rxMessage.getPayload()));
   }
@@ -38,7 +35,6 @@ public class RxMqttMessage implements IRxMqttMessage {
     }
   }
 
-  @Override
   public int getQos() {
     return null == rxMessage ? -1 : rxMessage.getQos();
   }

@@ -65,26 +65,33 @@ class RxMqttClientImpl implements RxMqttClient {
   @Override
   public Observable<IMqttToken> connect() {
     return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
-      @Override
-      public void call(final Subscriber<? super IMqttToken> subscriber) {
+      @Override public void call(final Subscriber<? super IMqttToken> subscriber) {
         if (client == null) {
           updateState(RxMqttClientState.CONNECTING_FAILED);
           subscriber.onError(new IllegalStateException("MQTT Client initialization failed"));
         }
 
+        if (rxMqttClientStatus.getState() == RxMqttClientState.CONNECTING
+            || rxMqttClientStatus.getState() == RxMqttClientState.TRY_DISCONNECT) {
+          return;
+        }
+        if (rxMqttClientStatus.getState() == RxMqttClientState.DISCONNECTED
+            || rxMqttClientStatus.getState() == RxMqttClientState.CONNECTION_LOST
+            || rxMqttClientStatus.getState() == RxMqttClientState.CONNECTING_FAILED
+            || rxMqttClientStatus.getState() == RxMqttClientState.INIT) {
+          connect(subscriber);
+          return;
+        }
         disconnect().subscribe(new Observer<IMqttToken>() {
-          @Override
-          public void onCompleted() {
+          @Override public void onCompleted() {
             connect(subscriber);
           }
 
-          @Override
-          public void onError(Throwable e) {
+          @Override public void onError(Throwable e) {
             connect(subscriber);
           }
 
-          @Override
-          public void onNext(IMqttToken iMqttToken) {
+          @Override public void onNext(IMqttToken iMqttToken) {
 
           }
         });

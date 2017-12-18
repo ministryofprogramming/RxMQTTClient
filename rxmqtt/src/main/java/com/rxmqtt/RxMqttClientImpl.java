@@ -39,6 +39,7 @@ class RxMqttClientImpl implements RxMqttClient {
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     clientStatusSubject = PublishSubject.create();
     rxMqttClientStatus = new RxMqttClientStatus();
+    connectSubject = BehaviorSubject.create();
   }
 
 
@@ -60,7 +61,6 @@ class RxMqttClientImpl implements RxMqttClient {
           @Override public void onSuccess(IMqttToken asyncActionToken) {
             updateState(RxMqttClientState.CONNECTED);
             connectSubject.onNext(asyncActionToken);
-            connectSubject.onCompleted();
           }
 
           @Override public void onFailure(IMqttToken asyncActionToken, Throwable exception) {

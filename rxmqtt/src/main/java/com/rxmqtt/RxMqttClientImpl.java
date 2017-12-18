@@ -21,6 +21,7 @@ import rx.Observable;
 import rx.Observer;
 import rx.Subscriber;
 import rx.functions.Func1;
+import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
 
 class RxMqttClientImpl implements RxMqttClient {
@@ -30,6 +31,7 @@ class RxMqttClientImpl implements RxMqttClient {
   private Hashtable<String, List<PublishSubject<RxMqttMessage>>> subjectHashtable;
   private PublishSubject<RxMqttClientStatus> clientStatusSubject;
   private RxMqttClientStatus rxMqttClientStatus;
+  private BehaviorSubject<IMqttToken> connectSubject;
 
   public RxMqttClientImpl(String brokerUrl, String clientId) throws MqttException {
     super();
@@ -39,64 +41,40 @@ class RxMqttClientImpl implements RxMqttClient {
     rxMqttClientStatus = new RxMqttClientStatus();
   }
 
-  private void connect(final Subscriber<? super IMqttToken> subscriber) {
-    try {
-      updateState(RxMqttClientState.CONNECTING);
-      client.connect(this.getConOpt(), "Context", new IMqttActionListener() {
-        @Override
-        public void onSuccess(IMqttToken asyncActionToken) {
-          updateState(RxMqttClientState.CONNECTED);
-          subscriber.onNext(asyncActionToken);
-          subscriber.onCompleted();
-        }
 
-        @Override
-        public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-          updateState(RxMqttClientState.CONNECTING_FAILED);
-          subscriber.onError(new RxMqttTokenException(exception, asyncActionToken));
-        }
-      });
-    } catch (MqttException ex) {
+  @Override public Observable<IMqttToken> connect() {
+    if (client == null) {
       updateState(RxMqttClientState.CONNECTING_FAILED);
-      subscriber.onError(ex);
+      connectSubject.onError(new IllegalStateException("MQTT Client initialization failed"));
     }
-  }
 
-  @Override
-  public Observable<IMqttToken> connect() {
-    return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
-      @Override public void call(final Subscriber<? super IMqttToken> subscriber) {
-        if (client == null) {
-          updateState(RxMqttClientState.CONNECTING_FAILED);
-          subscriber.onError(new IllegalStateException("MQTT Client initialization failed"));
-        }
+    if (client.isConnected()) {
+      connectSubject.last();
+      updateState(RxMqttClientState.CONNECTED);
+    } else if (rxMqttClientStatus.getState() != RxMqttClientState.CONNECTING
+        && rxMqttClientStatus.getState() != RxMqttClientState.CONNECTED) {
 
-        if (rxMqttClientStatus.getState() == RxMqttClientState.CONNECTING
-            || rxMqttClientStatus.getState() == RxMqttClientState.TRY_DISCONNECT) {
-          return;
-        }
-        if (rxMqttClientStatus.getState() == RxMqttClientState.DISCONNECTED
-            || rxMqttClientStatus.getState() == RxMqttClientState.CONNECTION_LOST
-            || rxMqttClientStatus.getState() == RxMqttClientState.CONNECTING_FAILED
-            || rxMqttClientStatus.getState() == RxMqttClientState.INIT) {
-          connect(subscriber);
-          return;
-        }
-        disconnect().subscribe(new Observer<IMqttToken>() {
-          @Override public void onCompleted() {
-            connect(subscriber);
+      try {
+        updateState(RxMqttClientState.CONNECTING);
+        client.connect(this.getConOpt(), "Context", new IMqttActionListener() {
+          @Override public void onSuccess(IMqttToken asyncActionToken) {
+            updateState(RxMqttClientState.CONNECTED);
+            connectSubject.onNext(asyncActionToken);
+            connectSubject.onCompleted();
           }
 
-          @Override public void onError(Throwable e) {
-            connect(subscriber);
-          }
-
-          @Override public void onNext(IMqttToken iMqttToken) {
-
+          @Override public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+            updateState(RxMqttClientState.CONNECTING_FAILED);
+            connectSubject.onError(new RxMqttTokenException(exception, asyncActionToken));
           }
         });
+      } catch (MqttException ex) {
+        updateState(RxMqttClientState.CONNECTING_FAILED);
+        connectSubject.onError(ex);
       }
-    });
+    }
+
+    return connectSubject;
   }
 
   @Override

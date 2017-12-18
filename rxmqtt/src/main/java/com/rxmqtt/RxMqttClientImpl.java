@@ -39,6 +39,7 @@ class RxMqttClientImpl implements RxMqttClient {
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     clientStatusSubject = PublishSubject.create();
     rxMqttClientStatus = new RxMqttClientStatus();
+    connectSubject = BehaviorSubject.create();
   }
 
 

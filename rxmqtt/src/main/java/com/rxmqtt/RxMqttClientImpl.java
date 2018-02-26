@@ -207,12 +207,12 @@ class RxMqttClientImpl implements RxMqttClient {
     });
   }
 
-  @Override public Observable<IMqttToken> unsubscribeTopic(final String[] topics) {
+  @Override public Observable<IMqttToken> unsubscribeTopic(final String topic) {
     return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
       @Override public void call(Subscriber<? super IMqttToken> subscriber) {
         if (client != null && client.isConnected()) {
           try {
-            client.unsubscribe(topics);
+            client.unsubscribe(topic);
           } catch (MqttException mqttException) {
             subscriber.onError(mqttException);
           }

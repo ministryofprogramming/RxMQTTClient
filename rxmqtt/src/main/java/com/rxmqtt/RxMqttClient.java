@@ -21,4 +21,6 @@ public interface RxMqttClient {
   Observable<RxMqttClientStatus> statusReport();
 
   Observable<IMqttToken> checkPing(Object userContext);
+
+  Observable<IMqttToken> unsubscribeTopic(String[] topics);
 }

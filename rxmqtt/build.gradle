@@ -37,7 +37,7 @@ ext {
 
 dependencies {
   implementation fileTree(dir: 'libs', include: ['*.jar'])
-  api "org.eclipse.paho:org.eclipse.paho.client.mqttv3:$pahoVersion"
+  compile "org.eclipse.paho:org.eclipse.paho.client.mqttv3:$pahoVersion"
 
   implementation "io.reactivex:rxjava:$rxJavaVersion"
   implementation "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"

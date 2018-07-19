@@ -29,7 +29,7 @@ class RxMqttClientImpl implements RxMqttClient {
   private MqttAsyncClient client;
 
   private Hashtable<String, List<PublishSubject<RxMqttMessage>>> subjectHashtable;
-  private PublishSubject<RxMqttClientStatus> clientStatusSubject;
+  private BehaviorSubject<RxMqttClientStatus> clientStatusSubject;
   private RxMqttClientStatus rxMqttClientStatus;
   private BehaviorSubject<IMqttToken> connectSubject;
 
@@ -37,7 +37,7 @@ class RxMqttClientImpl implements RxMqttClient {
     super();
     conOpt = new MqttConnectOptions();
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
-    clientStatusSubject = PublishSubject.create();
+    clientStatusSubject = BehaviorSubject.create();
     rxMqttClientStatus = new RxMqttClientStatus();
     connectSubject = BehaviorSubject.create();
   }
@@ -48,7 +48,7 @@ class RxMqttClientImpl implements RxMqttClient {
     conOpt.setPassword(password.toCharArray());
     conOpt.setUserName(username);
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
-    clientStatusSubject = PublishSubject.create();
+    clientStatusSubject = BehaviorSubject.create();
     rxMqttClientStatus = new RxMqttClientStatus();
     connectSubject = BehaviorSubject.create();
   }

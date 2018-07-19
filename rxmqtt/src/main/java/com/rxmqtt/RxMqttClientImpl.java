@@ -38,8 +38,8 @@ class RxMqttClientImpl implements RxMqttClient {
     conOpt = new MqttConnectOptions();
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     clientStatusSubject = BehaviorSubject.create();
-    rxMqttClientStatus = new RxMqttClientStatus();
     connectSubject = BehaviorSubject.create();
+    updateState(RxMqttClientState.INIT);
   }
 
   RxMqttClientImpl(String brokerUrl, String clientId, String username, String password)
@@ -51,6 +51,7 @@ class RxMqttClientImpl implements RxMqttClient {
     clientStatusSubject = BehaviorSubject.create();
     rxMqttClientStatus = new RxMqttClientStatus();
     connectSubject = BehaviorSubject.create();
+    updateState(RxMqttClientState.INIT);
   }
 
 

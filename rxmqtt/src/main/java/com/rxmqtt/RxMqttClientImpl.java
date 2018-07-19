@@ -35,6 +35,7 @@ class RxMqttClientImpl implements RxMqttClient {
 
   RxMqttClientImpl(String brokerUrl, String clientId) throws MqttException {
     super();
+    rxMqttClientStatus = new RxMqttClientStatus();
     conOpt = new MqttConnectOptions();
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     clientStatusSubject = BehaviorSubject.create();
@@ -44,12 +45,12 @@ class RxMqttClientImpl implements RxMqttClient {
 
   RxMqttClientImpl(String brokerUrl, String clientId, String username, String password)
       throws MqttException {
+    rxMqttClientStatus = new RxMqttClientStatus();
     conOpt = new MqttConnectOptions();
     conOpt.setPassword(password.toCharArray());
     conOpt.setUserName(username);
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     clientStatusSubject = BehaviorSubject.create();
-    rxMqttClientStatus = new RxMqttClientStatus();
     connectSubject = BehaviorSubject.create();
     updateState(RxMqttClientState.INIT);
   }

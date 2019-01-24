@@ -2,7 +2,7 @@ package com.rxmqtt.exceptions;
 
 import org.eclipse.paho.client.mqttv3.IMqttToken;
 
-public class RxMqttTokenException extends Throwable {
+public class RxMqttTokenException extends RuntimeException {
   private IMqttToken mqttToken;
 
   public RxMqttTokenException(Throwable cause, IMqttToken mqttToken) {

@@ -1,9 +1,10 @@
 package com.rxmqtt;
 
-import com.rxmqtt.models.enums.RxMqttClientState;
+import android.util.Log;
 import com.rxmqtt.exceptions.RxMqttTokenException;
 import com.rxmqtt.models.RxMqttClientStatus;
 import com.rxmqtt.models.RxMqttMessage;
+import com.rxmqtt.models.enums.RxMqttClientState;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Hashtable;
@@ -18,8 +19,8 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import rx.Observable;
-import rx.Observer;
 import rx.Subscriber;
+import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
@@ -28,7 +29,8 @@ class RxMqttClientImpl implements RxMqttClient {
   private MqttConnectOptions conOpt;
   private MqttAsyncClient client;
 
-  private Hashtable<String, List<PublishSubject<RxMqttMessage>>> subjectHashtable;
+  private Hashtable<String, List<PublishSubject<RxMqttMessage>>> subjectHashtable =
+      new Hashtable<>();
   private BehaviorSubject<RxMqttClientStatus> clientStatusSubject;
   private RxMqttClientStatus rxMqttClientStatus;
   private BehaviorSubject<IMqttToken> connectSubject;
@@ -41,6 +43,7 @@ class RxMqttClientImpl implements RxMqttClient {
     conOpt = new MqttConnectOptions();
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     updateState(RxMqttClientState.INIT);
+    setMQTTCallback();
   }
 
   RxMqttClientImpl(String brokerUrl, String clientId, String username, String password)
@@ -53,8 +56,8 @@ class RxMqttClientImpl implements RxMqttClient {
     clientStatusSubject = BehaviorSubject.create();
     connectSubject = BehaviorSubject.create();
     updateState(RxMqttClientState.INIT);
+    setMQTTCallback();
   }
-
 
   @Override public Observable<IMqttToken> connect() {
     if (client == null) {
@@ -133,8 +136,9 @@ class RxMqttClientImpl implements RxMqttClient {
     return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
       @Override
       public void call(final Subscriber<? super IMqttToken> subscriber) {
-        if (null == client)
+        if (null == client) {
           subscriber.onError(new IllegalStateException(""));
+        }
 
         try {
           client.publish(topic, message, "Context", new IMqttActionListener() {
@@ -162,63 +166,56 @@ class RxMqttClientImpl implements RxMqttClient {
 
   @Override
   public Observable<RxMqttMessage> subscribeTopic(final String topic, final int qos) {
-    return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
-      @Override
-      public void call(final Subscriber<? super IMqttToken> subscriber) {
-        if (client == null) subscriber.onError(new IllegalStateException("MQTT Client initialization failed"));
-
-        try {
-          client.subscribe(topic, qos, "Context", new IMqttActionListener() {
-            @Override
-            public void onSuccess(IMqttToken asyncActionToken) {
-              subscriber.onNext(asyncActionToken);
-              subscriber.onCompleted();
+    return subscribing(topic)
+        .doOnSubscribe(new Action0() {
+          @Override public void call() {
+            if (client == null) {
+              throw new IllegalStateException("MQTT Client initialization failed");
             }
 
-            @Override
-            public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-              subscriber.onError(new RxMqttTokenException(exception, asyncActionToken));
+            try {
+              client.subscribe(topic, qos, "Context", new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                  throw new RxMqttTokenException(exception, asyncActionToken);
+                }
+              });
+            } catch (MqttException e) {
+              throw new RxMqttTokenException(e, null);
             }
-          });
-        } catch (MqttException ex) {
-          subscriber.onError(ex);
-        }
-      }
-    }).flatMap(new Func1<IMqttToken, Observable<RxMqttMessage>>() {
-      @Override public Observable<RxMqttMessage> call(IMqttToken iMqttToken) {
-        return subscribing(topic);
-      }
-    });
+          }
+        });
   }
 
   @Override
   public Observable<RxMqttMessage> subscribeTopic(final String[] topics, final int[] qos) {
-    return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
-      @Override public void call(final Subscriber<? super IMqttToken> subscriber) {
-        if (client == null) {
-          subscriber.onError(new IllegalStateException("MQTT Client initialization failed"));
-        }
-
-        try {
-          client.subscribe(topics, qos, "Context", new IMqttActionListener() {
-            @Override public void onSuccess(IMqttToken asyncActionToken) {
-              subscriber.onNext(asyncActionToken);
-              subscriber.onCompleted();
+    return subscribing(topics)
+        .doOnSubscribe(new Action0() {
+          @Override public void call() {
+            if (client == null) {
+              throw new IllegalStateException("MQTT Client initialization failed");
             }
 
-            @Override public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-              subscriber.onError(new RxMqttTokenException(exception, asyncActionToken));
+            try {
+              client.subscribe(topics, qos, "Context", new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                  throw new RxMqttTokenException(exception, asyncActionToken);
+                }
+              });
+            } catch (MqttException e) {
+              throw new RxMqttTokenException(e, null);
             }
-          });
-        } catch (MqttException ex) {
-          subscriber.onError(ex);
-        }
-      }
-    }).flatMap(new Func1<IMqttToken, Observable<RxMqttMessage>>() {
-      @Override public Observable<RxMqttMessage> call(IMqttToken iMqttToken) {
-        return subscribing(topics);
-      }
-    });
+          }
+        });
   }
 
   @Override public Observable<IMqttToken> unsubscribeTopic(final String topic) {
@@ -260,7 +257,6 @@ class RxMqttClientImpl implements RxMqttClient {
         }
       }
     });
-
   }
 
   public MqttConnectOptions getConOpt() {
@@ -278,10 +274,8 @@ class RxMqttClientImpl implements RxMqttClient {
   }
 
   private synchronized Observable<RxMqttMessage> subscribing(String topic) {
-    setMQTTCallback();
-
     PublishSubject<RxMqttMessage> subject = PublishSubject.create();
-    if(subjectHashtable.containsKey(topic)) {
+    if (subjectHashtable.containsKey(topic)) {
       subjectHashtable.get(topic).add(subject);
     } else {
       subjectHashtable.put(topic, new ArrayList<>(Collections.singletonList(subject)));
@@ -290,10 +284,8 @@ class RxMqttClientImpl implements RxMqttClient {
   }
 
   private synchronized Observable<RxMqttMessage> subscribing(String[] topics) {
-    setMQTTCallback();
-
     PublishSubject<RxMqttMessage> subject = PublishSubject.create();
-    for(String topic : topics) {
+    for (String topic : topics) {
       if (subjectHashtable.containsKey(topic)) {
         subjectHashtable.get(topic).add(subject);
       } else {
@@ -304,30 +296,26 @@ class RxMqttClientImpl implements RxMqttClient {
   }
 
   private synchronized void setMQTTCallback() {
-    if (subjectHashtable == null) {
-      subjectHashtable = new Hashtable<>();
+    client.setCallback(new MqttCallback() {
+      @Override
+      public void connectionLost(Throwable cause) {
+        updateState(RxMqttClientState.CONNECTION_LOST);
+      }
 
-      client.setCallback(new MqttCallback() {
-        @Override
-        public void connectionLost(Throwable cause) {
-          updateState(RxMqttClientState.CONNECTION_LOST);
-        }
-
-        @Override
-        public void messageArrived(String topic, MqttMessage message) {
-          if (message.getPayload().length != 0 && subjectHashtable.containsKey(topic)) {
-            List<PublishSubject<RxMqttMessage>> subjects = subjectHashtable.get(topic);
-            for (PublishSubject<RxMqttMessage> publishSubject : subjects) {
-              publishSubject.onNext(new RxMqttMessage(topic, message));
-            }
+      @Override
+      public void messageArrived(String topic, MqttMessage message) {
+        if (message.getPayload().length != 0 && subjectHashtable.containsKey(topic)) {
+          List<PublishSubject<RxMqttMessage>> subjects = subjectHashtable.get(topic);
+          for (PublishSubject<RxMqttMessage> publishSubject : subjects) {
+            publishSubject.onNext(new RxMqttMessage(topic, message));
           }
         }
+      }
 
-        @Override
-        public void deliveryComplete(IMqttDeliveryToken token) {
+      @Override
+      public void deliveryComplete(IMqttDeliveryToken token) {
 
-        }
-      });
-    }
+      }
+    });
   }
 }

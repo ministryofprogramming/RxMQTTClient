@@ -36,10 +36,10 @@ class RxMqttClientImpl implements RxMqttClient {
   RxMqttClientImpl(String brokerUrl, String clientId) throws MqttException {
     super();
     rxMqttClientStatus = new RxMqttClientStatus();
-    conOpt = new MqttConnectOptions();
-    client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     clientStatusSubject = BehaviorSubject.create();
     connectSubject = BehaviorSubject.create();
+    conOpt = new MqttConnectOptions();
+    client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     updateState(RxMqttClientState.INIT);
   }
 
@@ -104,6 +104,7 @@ class RxMqttClientImpl implements RxMqttClient {
                 updateState(RxMqttClientState.DISCONNECTED);
                 subscriber.onNext(asyncActionToken);
                 subscriber.onCompleted();
+                subjectHashtable.clear();
               }
 
               @Override

@@ -60,7 +60,6 @@ class RxMqttClientImpl implements RxMqttClient {
   }
 
   @Override public Observable<IMqttToken> connect() {
-    publish("client_presence/online", "Client is connected".getBytes());
     if (client == null) {
       updateState(RxMqttClientState.CONNECTING_FAILED);
       connectSubject.onError(new IllegalStateException("MQTT Client initialization failed"));
@@ -96,8 +95,6 @@ class RxMqttClientImpl implements RxMqttClient {
 
   @Override
   public Observable<IMqttToken> disconnect() {
-
-    publish("client_presence/offline", "Client is offline".getBytes());
 
     return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
       @Override
@@ -272,6 +269,11 @@ class RxMqttClientImpl implements RxMqttClient {
   }
 
   private void updateState(RxMqttClientState clientState) {
+    if (clientState == RxMqttClientState.CONNECTED) {
+      publish("client_presence/online", "Client is connected".getBytes());
+    } else if (clientState == RxMqttClientState.DISCONNECTED) {
+      publish("client_presence/offline", "Client is offline".getBytes());
+    }
     rxMqttClientStatus.setLogTime(System.currentTimeMillis());
     rxMqttClientStatus.setState(clientState);
     clientStatusSubject.onNext(rxMqttClientStatus);

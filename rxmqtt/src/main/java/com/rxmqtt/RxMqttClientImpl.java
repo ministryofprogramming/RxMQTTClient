@@ -1,6 +1,5 @@
 package com.rxmqtt;
 
-import android.util.Log;
 import com.rxmqtt.exceptions.RxMqttTokenException;
 import com.rxmqtt.models.RxMqttClientStatus;
 import com.rxmqtt.models.RxMqttMessage;
@@ -21,7 +20,6 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.functions.Func1;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
 
@@ -52,6 +50,8 @@ class RxMqttClientImpl implements RxMqttClient {
     conOpt = new MqttConnectOptions();
     conOpt.setPassword(password.toCharArray());
     conOpt.setUserName(username);
+    conOpt.setWill("client_presence/offline", "Client is offline".getBytes(), 1,
+        false);
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     clientStatusSubject = BehaviorSubject.create();
     connectSubject = BehaviorSubject.create();
@@ -60,6 +60,7 @@ class RxMqttClientImpl implements RxMqttClient {
   }
 
   @Override public Observable<IMqttToken> connect() {
+    publish("client_presence/online", "Client is connected".getBytes());
     if (client == null) {
       updateState(RxMqttClientState.CONNECTING_FAILED);
       connectSubject.onError(new IllegalStateException("MQTT Client initialization failed"));
@@ -95,6 +96,9 @@ class RxMqttClientImpl implements RxMqttClient {
 
   @Override
   public Observable<IMqttToken> disconnect() {
+
+    publish("client_presence/offline", "Client is offline".getBytes());
+
     return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
       @Override
       public void call(final Subscriber<? super IMqttToken> subscriber) {

@@ -1,5 +1,6 @@
 package com.rxmqtt;
 
+import android.util.Log;
 import com.rxmqtt.exceptions.RxMqttTokenException;
 import com.rxmqtt.models.RxMqttClientStatus;
 import com.rxmqtt.models.RxMqttMessage;
@@ -20,6 +21,7 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
+import rx.functions.Func1;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
 
@@ -44,14 +46,16 @@ class RxMqttClientImpl implements RxMqttClient {
     setMQTTCallback();
   }
 
-  RxMqttClientImpl(String brokerUrl, String clientId, String username, String password)
+  RxMqttClientImpl(String brokerUrl, String clientId, String username, String password,
+      byte[] userStatusPayload)
       throws MqttException {
     rxMqttClientStatus = new RxMqttClientStatus();
     conOpt = new MqttConnectOptions();
     conOpt.setPassword(password.toCharArray());
     conOpt.setUserName(username);
-    conOpt.setWill("client_presence/offline", "Client is offline".getBytes(), 1,
+    conOpt.setWill("user_presence/update", userStatusPayload, 1,
         false);
+
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     clientStatusSubject = BehaviorSubject.create();
     connectSubject = BehaviorSubject.create();
@@ -134,10 +138,13 @@ class RxMqttClientImpl implements RxMqttClient {
     message.setQos(1);
     message.setPayload(msg);
 
+    Log.e("LOGLOG", "sending message, topic: " + topic);
+
     return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
       @Override
       public void call(final Subscriber<? super IMqttToken> subscriber) {
         if (null == client) {
+          Log.e("LOGLOG", "client is null:");
           subscriber.onError(new IllegalStateException(""));
         }
 
@@ -145,16 +152,19 @@ class RxMqttClientImpl implements RxMqttClient {
           client.publish(topic, message, "Context", new IMqttActionListener() {
             @Override
             public void onSuccess(IMqttToken asyncActionToken) {
+              Log.e("LOGLOG", "success:");
               subscriber.onNext(asyncActionToken);
               subscriber.onCompleted();
             }
 
             @Override
             public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+              Log.e("LOGLOG", "failed: " + exception.getMessage());
               subscriber.onError(new RxMqttTokenException(exception, asyncActionToken));
             }
           });
         } catch (MqttException ex) {
+          Log.e("LOGLOG", "failed catch: " + ex.getMessage());
           subscriber.onError(ex);
         }
       }
@@ -269,11 +279,6 @@ class RxMqttClientImpl implements RxMqttClient {
   }
 
   private void updateState(RxMqttClientState clientState) {
-    if (clientState == RxMqttClientState.CONNECTED) {
-      publish("client_presence/online", "Client is connected".getBytes());
-    } else if (clientState == RxMqttClientState.DISCONNECTED) {
-      publish("client_presence/offline", "Client is offline".getBytes());
-    }
     rxMqttClientStatus.setLogTime(System.currentTimeMillis());
     rxMqttClientStatus.setState(clientState);
     clientStatusSubject.onNext(rxMqttClientStatus);

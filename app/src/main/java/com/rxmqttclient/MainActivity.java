@@ -2,7 +2,6 @@ package com.rxmqttclient;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import com.rxmqtt.RxMqttClient;
 
 public class MainActivity extends AppCompatActivity {
 

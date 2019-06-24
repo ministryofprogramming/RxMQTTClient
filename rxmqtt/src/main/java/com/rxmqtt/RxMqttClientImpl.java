@@ -138,13 +138,10 @@ class RxMqttClientImpl implements RxMqttClient {
     message.setQos(1);
     message.setPayload(msg);
 
-    Log.e("LOGLOG", "sending message, topic: " + topic);
-
     return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
       @Override
       public void call(final Subscriber<? super IMqttToken> subscriber) {
         if (null == client) {
-          Log.e("LOGLOG", "client is null:");
           subscriber.onError(new IllegalStateException(""));
         }
 
@@ -152,19 +149,16 @@ class RxMqttClientImpl implements RxMqttClient {
           client.publish(topic, message, "Context", new IMqttActionListener() {
             @Override
             public void onSuccess(IMqttToken asyncActionToken) {
-              Log.e("LOGLOG", "success:");
               subscriber.onNext(asyncActionToken);
               subscriber.onCompleted();
             }
 
             @Override
             public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-              Log.e("LOGLOG", "failed: " + exception.getMessage());
               subscriber.onError(new RxMqttTokenException(exception, asyncActionToken));
             }
           });
         } catch (MqttException ex) {
-          Log.e("LOGLOG", "failed catch: " + ex.getMessage());
           subscriber.onError(ex);
         }
       }

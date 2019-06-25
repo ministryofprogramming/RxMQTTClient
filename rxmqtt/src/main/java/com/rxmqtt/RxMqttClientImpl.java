@@ -4,6 +4,7 @@ import android.util.Log;
 import com.rxmqtt.exceptions.RxMqttTokenException;
 import com.rxmqtt.models.RxMqttClientStatus;
 import com.rxmqtt.models.RxMqttMessage;
+import com.rxmqtt.models.RxMqttWill;
 import com.rxmqtt.models.enums.RxMqttClientState;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,14 +48,16 @@ class RxMqttClientImpl implements RxMqttClient {
   }
 
   RxMqttClientImpl(String brokerUrl, String clientId, String username, String password,
-      byte[] userStatusPayload)
+      RxMqttWill rxMqttWill)
       throws MqttException {
     rxMqttClientStatus = new RxMqttClientStatus();
     conOpt = new MqttConnectOptions();
     conOpt.setPassword(password.toCharArray());
     conOpt.setUserName(username);
-    conOpt.setWill("user_presence/update", userStatusPayload, 1,
-        false);
+    if (rxMqttWill != null) {
+      conOpt.setWill(rxMqttWill.getTopic(), rxMqttWill.getPayload(), rxMqttWill.getQos(),
+          rxMqttWill.isRetained());
+    }
 
     client = new MqttAsyncClient(brokerUrl, clientId, new MemoryPersistence());
     clientStatusSubject = BehaviorSubject.create();
@@ -138,6 +141,8 @@ class RxMqttClientImpl implements RxMqttClient {
     message.setQos(1);
     message.setPayload(msg);
 
+    Log.e("LOGLOG", "sending message topic: " + topic);
+
     return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
       @Override
       public void call(final Subscriber<? super IMqttToken> subscriber) {
@@ -149,6 +154,7 @@ class RxMqttClientImpl implements RxMqttClient {
           client.publish(topic, message, "Context", new IMqttActionListener() {
             @Override
             public void onSuccess(IMqttToken asyncActionToken) {
+              Log.e("LOGLOG", "success: " + topic);
               subscriber.onNext(asyncActionToken);
               subscriber.onCompleted();
             }

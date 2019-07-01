@@ -1,6 +1,5 @@
 package com.rxmqtt;
 
-import android.util.Log;
 import com.rxmqtt.exceptions.RxMqttTokenException;
 import com.rxmqtt.models.RxMqttClientStatus;
 import com.rxmqtt.models.RxMqttMessage;
@@ -22,7 +21,6 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
-import rx.functions.Func1;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
 
@@ -141,8 +139,6 @@ class RxMqttClientImpl implements RxMqttClient {
     message.setQos(1);
     message.setPayload(msg);
 
-    Log.e("LOGLOG", "sending message topic: " + topic);
-
     return Observable.create(new Observable.OnSubscribe<IMqttToken>() {
       @Override
       public void call(final Subscriber<? super IMqttToken> subscriber) {
@@ -154,7 +150,6 @@ class RxMqttClientImpl implements RxMqttClient {
           client.publish(topic, message, "Context", new IMqttActionListener() {
             @Override
             public void onSuccess(IMqttToken asyncActionToken) {
-              Log.e("LOGLOG", "success: " + topic);
               subscriber.onNext(asyncActionToken);
               subscriber.onCompleted();
             }

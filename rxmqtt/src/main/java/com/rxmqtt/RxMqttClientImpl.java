@@ -86,12 +86,10 @@ class RxMqttClientImpl implements RxMqttClient {
 
           @Override public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
             updateState(RxMqttClientState.CONNECTING_FAILED);
-            connectSubject.onError(new RxMqttTokenException(exception, asyncActionToken));
           }
         });
       } catch (MqttException ex) {
         updateState(RxMqttClientState.CONNECTING_FAILED);
-        connectSubject.onError(ex);
       }
     }
 

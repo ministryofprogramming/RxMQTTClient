@@ -21,6 +21,8 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import rx.Observable;
 import rx.Subscriber;
 import rx.functions.Action0;
+import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
 
@@ -33,6 +35,7 @@ class RxMqttClientImpl implements RxMqttClient {
   private BehaviorSubject<RxMqttClientStatus> clientStatusSubject;
   private RxMqttClientStatus rxMqttClientStatus;
   private BehaviorSubject<IMqttToken> connectSubject;
+  private Boolean isDebug = false;
 
   RxMqttClientImpl(String brokerUrl, String clientId) throws MqttException {
     super();
@@ -85,10 +88,16 @@ class RxMqttClientImpl implements RxMqttClient {
           }
 
           @Override public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+            if (isDebug) {
+              connectSubject.onError(exception);
+            }
             updateState(RxMqttClientState.CONNECTING_FAILED);
           }
         });
       } catch (MqttException ex) {
+        if (isDebug) {
+          connectSubject.onError(ex);
+        }
         updateState(RxMqttClientState.CONNECTING_FAILED);
       }
     }
@@ -321,5 +330,9 @@ class RxMqttClientImpl implements RxMqttClient {
 
       }
     });
+  }
+
+  @Override public void setDebug(Boolean debug) {
+    this.isDebug = debug;
   }
 }
